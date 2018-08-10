@@ -27,14 +27,13 @@ defmodule Phoenix.Controller.Pipeline do
               |> Map.put(:phoenix_action, action))
           )
 
-        Phoenix.Endpoint.instrument(
-          conn,
-          :phoenix_controller_call,
-          %{conn: conn, log_level: @phoenix_log_level},
-          fn ->
-            phoenix_controller_pipeline(conn, action)
-          end
-        )
+        metadata = %{conn: conn}
+        start = :erlang.monotonic_time()
+        Telemetry.execute([:phoenix, :controller, :call, :start], 0, metadata)
+        conn = phoenix_controller_pipeline(conn, action)
+        diff = :erlang.monotonic_time() - start
+        Telemetry.execute([:phoenix, :controller, :call, :stop], diff, metadata)
+        conn
       end
 
       @doc false

@@ -763,10 +763,11 @@ defmodule Phoenix.Controller do
 
     metadata = %{view: view, template: template, format: format, conn: conn}
 
-    conn =
-      Phoenix.Endpoint.instrument(conn, :phoenix_controller_render, metadata, fn ->
-        __put_render__(conn, view, template, format, assigns)
-      end)
+    start = :erlang.monotonic_time()
+    Telemetry.execute([:phoenix, :controller, :render, :start], 0, metadata)
+    conn = __put_render__(conn, view, template, format, assigns)
+    diff = :erlang.monotonic_time() - start
+    Telemetry.execute([:phoenix, :controller, :render, :stop], diff, metadata)
 
     send_resp(conn)
   end
