@@ -8,10 +8,13 @@ defmodule Phoenix.Socket.TransportTest do
 
   alias Phoenix.Socket.Transport
 
-  Application.put_env :phoenix, __MODULE__.Endpoint,
+  Application.put_env(
+    :phoenix,
+    __MODULE__.Endpoint,
     force_ssl: [],
     url: [host: {:system, "TRANSPORT_TEST_HOST"}],
     check_origin: ["//endpoint.com"]
+  )
 
   defmodule Endpoint do
     use Phoenix.Endpoint, otp_app: :phoenix
@@ -186,11 +189,15 @@ defmodule Phoenix.Socket.TransportTest do
       assert get_resp_header(conn, "location") == ["https://host.com/"]
 
       # Disabled
-      conn = Transport.force_ssl(conn(:get, "http://foo.com/"), make_ref(), Endpoint, force_ssl: false)
+      conn =
+        Transport.force_ssl(conn(:get, "http://foo.com/"), make_ref(), Endpoint, force_ssl: false)
+
       refute conn.halted
 
       # No-op when already halted
-      conn = Transport.force_ssl(conn(:get, "http://foo.com/") |> halt(), make_ref(), Endpoint, [])
+      conn =
+        Transport.force_ssl(conn(:get, "http://foo.com/") |> halt(), make_ref(), Endpoint, [])
+
       assert conn.halted
       assert get_resp_header(conn, "location") == []
 

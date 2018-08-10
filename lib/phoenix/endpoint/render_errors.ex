@@ -33,7 +33,7 @@ defmodule Phoenix.Endpoint.RenderErrors do
   @doc false
   defmacro __before_compile__(_) do
     quote location: :keep do
-      defoverridable [call: 2]
+      defoverridable call: 2
 
       def call(conn, opts) do
         try do
@@ -57,8 +57,8 @@ defmodule Phoenix.Endpoint.RenderErrors do
       @already_sent ->
         send(self(), @already_sent)
         %Plug.Conn{conn | state: :sent}
-
-      after 0 ->
+    after
+      0 ->
         instrument_render_and_send(conn, kind, reason, stack, opts)
     end
 
@@ -69,7 +69,15 @@ defmodule Phoenix.Endpoint.RenderErrors do
     level = Keyword.get(opts, :log_level, :info)
     status = status(kind, reason)
     conn = error_conn(conn, kind, reason)
-    metadata = %{status: status, conn: conn, kind: kind, reason: reason, stacktrace: stack, log_level: level}
+
+    metadata = %{
+      status: status,
+      conn: conn,
+      kind: kind,
+      reason: reason,
+      stacktrace: stack,
+      log_level: level
+    }
 
     conn =
       Phoenix.Endpoint.instrument(conn, :phoenix_error_render, metadata, fn ->
@@ -91,10 +99,12 @@ defmodule Phoenix.Endpoint.RenderErrors do
     <pre>#{Phoenix.Router.ConsoleFormatter.format(router)}</pre>
     """
   end
+
   def __debugger_banner__(_conn, _status, _kind, _reason, _stack), do: nil
 
   defp render(conn, status, kind, reason, stack, opts) do
     view = Keyword.fetch!(opts, :view)
+
     conn =
       conn
       |> maybe_fetch_query_params()
@@ -130,14 +140,18 @@ defmodule Phoenix.Endpoint.RenderErrors do
   rescue
     e in Phoenix.NotAcceptableError ->
       fallback_format = Keyword.fetch!(opts, :accepts) |> List.first()
-      Logger.debug("Could not render errors due to #{Exception.message(e)}. " <>
-                   "Errors will be rendered using the first accepted format #{inspect fallback_format} as fallback. " <>
-                   "Please customize the :accepts option under the :render_errors configuration " <>
-                   "in your endpoint if you want to support other formats or choose another fallback")
+
+      Logger.debug(
+        "Could not render errors due to #{Exception.message(e)}. " <>
+          "Errors will be rendered using the first accepted format #{inspect(fallback_format)} as fallback. " <>
+          "Please customize the :accepts option under the :render_errors configuration " <>
+          "in your endpoint if you want to support other formats or choose another fallback"
+      )
+
       Controller.put_format(conn, fallback_format)
   end
 
   defp status(:error, error), do: Plug.Exception.status(error)
   defp status(:throw, _throw), do: 500
-  defp status(:exit, _exit),   do: 500
+  defp status(:exit, _exit), do: 500
 end

@@ -29,7 +29,7 @@ defmodule Phoenix.Router.RoutingTest do
     get "/backups/*path", UserController, :image
     get "/static/images/icons/*image", UserController, :image
 
-    trace "/trace", UserController, :trace
+    trace("/trace", UserController, :trace)
     options "/options", UserController, :options
     connect "/connect", UserController, :connect
     match :move, "/move", UserController, :move

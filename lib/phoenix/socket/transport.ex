@@ -112,7 +112,7 @@ defmodule Phoenix.Socket.Transport do
 
   means `child_spec([shutdown: 5000])` will be invoked.
   """
-  @callback child_spec(keyword) :: :supervisor.child_spec
+  @callback child_spec(keyword) :: :supervisor.child_spec()
 
   @doc """
   Connects to the socket.
@@ -199,13 +199,13 @@ defmodule Phoenix.Socket.Transport do
 
   @doc false
   def protocol_version do
-    IO.warn "Phoenix.Socket.Transport.protocol_version/0 is deprecated"
+    IO.warn("Phoenix.Socket.Transport.protocol_version/0 is deprecated")
     "2.0.0"
   end
 
   @doc false
   def connect(endpoint, handler, _transport_name, transport, serializers, params, _pid \\ self()) do
-    IO.warn "Phoenix.Socket.Transport.connect/7 is deprecated"
+    IO.warn("Phoenix.Socket.Transport.connect/7 is deprecated")
 
     handler.connect(%{
       endpoint: endpoint,
@@ -219,12 +219,15 @@ defmodule Phoenix.Socket.Transport do
   def dispatch(msg, channels, socket)
 
   def dispatch(%{ref: ref, topic: "phoenix", event: "heartbeat"}, _channels, socket) do
-    IO.warn "Phoenix.Socket.Transport.dispatch/3 is deprecated"
-    {:reply, %Reply{join_ref: socket.join_ref, ref: ref, topic: "phoenix", status: :ok, payload: %{}}}
+    IO.warn("Phoenix.Socket.Transport.dispatch/3 is deprecated")
+
+    {:reply,
+     %Reply{join_ref: socket.join_ref, ref: ref, topic: "phoenix", status: :ok, payload: %{}}}
   end
 
   def dispatch(%Message{} = msg, channels, socket) do
-    IO.warn "Phoenix.Socket.Transport.dispatch/3 is deprecated"
+    IO.warn("Phoenix.Socket.Transport.dispatch/3 is deprecated")
+
     channels
     |> Map.get(msg.topic)
     |> do_dispatch(msg, socket)
@@ -235,10 +238,12 @@ defmodule Phoenix.Socket.Transport do
       {channel, opts} ->
         case Phoenix.Channel.Server.join(socket, channel, msg, opts) do
           {:ok, reply, pid} ->
-            {:joined, pid, %Reply{join_ref: ref, ref: ref, topic: topic, status: :ok, payload: reply}}
+            {:joined, pid,
+             %Reply{join_ref: ref, ref: ref, topic: topic, status: :ok, payload: reply}}
 
           {:error, reply} ->
-            {:error, reply, %Reply{join_ref: ref, ref: ref, topic: topic, status: :error, payload: reply}}
+            {:error, reply,
+             %Reply{join_ref: ref, ref: ref, topic: topic, status: :error, payload: reply}}
         end
 
       nil ->
@@ -247,8 +252,11 @@ defmodule Phoenix.Socket.Transport do
   end
 
   defp do_dispatch({pid, _ref}, %{event: "phx_join"} = msg, socket) when is_pid(pid) do
-    Logger.debug "Duplicate channel join for topic \"#{msg.topic}\" in #{inspect(socket.handler)}. " <>
-                 "Closing existing channel for new join."
+    Logger.debug(
+      "Duplicate channel join for topic \"#{msg.topic}\" in #{inspect(socket.handler)}. " <>
+        "Closing existing channel for new join."
+    )
+
     :ok = Phoenix.Channel.Server.close([pid])
     do_dispatch(nil, msg, socket)
   end
@@ -263,20 +271,29 @@ defmodule Phoenix.Socket.Transport do
   end
 
   defp reply_ignore(msg, socket) do
-    Logger.warn fn -> "Ignoring unmatched topic \"#{msg.topic}\" in #{inspect(socket.handler)}" end
-    {:error, :unmatched_topic, %Reply{join_ref: socket.join_ref, ref: msg.ref, topic: msg.topic, status: :error,
-                                      payload: %{reason: "unmatched topic"}}}
+    Logger.warn(fn ->
+      "Ignoring unmatched topic \"#{msg.topic}\" in #{inspect(socket.handler)}"
+    end)
+
+    {:error, :unmatched_topic,
+     %Reply{
+       join_ref: socket.join_ref,
+       ref: msg.ref,
+       topic: msg.topic,
+       status: :error,
+       payload: %{reason: "unmatched topic"}
+     }}
   end
 
   @doc false
   def on_exit_message(topic, join_ref, _reason) do
-    IO.warn "Phoenix.Socket.Transport.on_exit_mesage/3 is deprecated"
+    IO.warn("Phoenix.Socket.Transport.on_exit_mesage/3 is deprecated")
     %Message{join_ref: join_ref, ref: join_ref, topic: topic, event: "phx_error", payload: %{}}
   end
 
   @doc false
   def on_exit_message(topic, reason) do
-    IO.warn "Phoenix.Transport.on_exit_message/2 is deprecated"
+    IO.warn("Phoenix.Transport.on_exit_message/2 is deprecated")
     on_exit_message(topic, nil, reason)
   end
 
@@ -315,6 +332,7 @@ defmodule Phoenix.Socket.Transport do
           |> Keyword.put_new(:host, {endpoint, :host, []})
           |> Plug.SSL.init()
         end
+
       {:cache, opts}
     end)
   end
@@ -349,7 +367,7 @@ defmodule Phoenix.Socket.Transport do
 
   def check_origin(conn, handler, endpoint, opts, sender) do
     import Plug.Conn
-    origin       = conn |> get_req_header("origin") |> List.first()
+    origin = conn |> get_req_header("origin") |> List.first()
     check_origin = check_origin_config(handler, endpoint, opts)
 
     cond do
@@ -360,7 +378,7 @@ defmodule Phoenix.Socket.Transport do
         conn
 
       true ->
-        Logger.error """
+        Logger.error("""
         Could not check origin for Phoenix.Socket transport.
 
         Origin of the request: #{origin}
@@ -381,7 +399,8 @@ defmodule Phoenix.Socket.Transport do
 
                 check_origin: ["https://example.com",
                                "//another.com:888", "//other.com"]
-        """
+        """)
+
         resp(conn, :forbidden, "")
         |> sender.()
         |> halt()
@@ -402,7 +421,10 @@ defmodule Phoenix.Socket.Transport do
             {module, function, arguments}
 
           invalid ->
-            raise ArgumentError, "check_origin expects a boolean, list of hosts, or MFA tuple, got: #{inspect(invalid)}"
+            raise ArgumentError,
+                  "check_origin expects a boolean, list of hosts, or MFA tuple, got: #{
+                    inspect(invalid)
+                  }"
         end
 
       {:cache, check_origin}
@@ -413,9 +435,9 @@ defmodule Phoenix.Socket.Transport do
     case URI.parse(origin) do
       %{host: nil} ->
         raise ArgumentError,
-          "invalid check_origin: #{inspect origin}. " <>
-          "Expected an origin with a host that is parsable by URI.parse/1. For example: " <>
-          "[\"https://example.com\", \"//another.com:888\", \"//other.com\"]"
+              "invalid check_origin: #{inspect(origin)}. " <>
+                "Expected an origin with a host that is parsable by URI.parse/1. For example: " <>
+                "[\"https://example.com\", \"//another.com:888\", \"//other.com\"]"
 
       %{scheme: scheme, port: port, host: host} ->
         {scheme, host, port}
@@ -424,10 +446,13 @@ defmodule Phoenix.Socket.Transport do
 
   defp origin_allowed?({module, function, arguments}, uri, _endpoint),
     do: apply(module, function, [uri | arguments])
+
   defp origin_allowed?(_check_origin, %{host: nil}, _endpoint),
     do: false
+
   defp origin_allowed?(true, uri, endpoint),
     do: compare?(uri.host, host_to_binary(endpoint.config(:url)[:host]))
+
   defp origin_allowed?(check_origin, uri, _endpoint) when is_list(check_origin),
     do: origin_allowed?(uri, check_origin)
 
@@ -435,9 +460,8 @@ defmodule Phoenix.Socket.Transport do
     %{scheme: origin_scheme, host: origin_host, port: origin_port} = uri
 
     Enum.any?(allowed_origins, fn {allowed_scheme, allowed_host, allowed_port} ->
-      compare?(origin_scheme, allowed_scheme) and
-      compare?(origin_port, allowed_port) and
-      compare_host?(origin_host, allowed_host)
+      compare?(origin_scheme, allowed_scheme) and compare?(origin_port, allowed_port) and
+        compare_host?(origin_host, allowed_host)
     end)
   end
 
@@ -447,8 +471,10 @@ defmodule Phoenix.Socket.Transport do
 
   defp compare_host?(_request_host, nil),
     do: true
+
   defp compare_host?(request_host, "*." <> allowed_host),
     do: String.ends_with?(request_host, allowed_host)
+
   defp compare_host?(request_host, allowed_host),
     do: request_host == allowed_host
 

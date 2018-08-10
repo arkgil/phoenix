@@ -4,7 +4,7 @@
 defmodule Phoenix.Router.PipelineTest.SampleController do
   use Phoenix.Controller
   def index(conn, _params), do: text(conn, "index")
-  def crash(_conn, _params), do: raise "crash!"
+  def crash(_conn, _params), do: raise("crash!")
 
   # Let's also define a custom plug that we will
   # use in our router as part of a pipeline
@@ -74,11 +74,11 @@ defmodule Phoenix.Router.PipelineTest.Router do
   end
 
   defp put_assign(conn, value) do
-    assign conn, :stack, value
+    assign(conn, :stack, value)
   end
 
   defp put_params(conn, _) do
-    assign conn, :params, conn.params
+    assign(conn, :params, conn.params)
   end
 end
 
@@ -139,8 +139,10 @@ defmodule Phoenix.Router.PipelineTest do
     assert_raise ArgumentError, ~r{duplicate pipe_through for :browser}, fn ->
       defmodule DupPipeThroughRouter do
         use Phoenix.Router, otp_app: :phoenix
+
         pipeline :browser do
         end
+
         scope "/" do
           pipe_through [:browser, :auth, :browser]
         end
@@ -150,10 +152,13 @@ defmodule Phoenix.Router.PipelineTest do
     assert_raise ArgumentError, ~r{duplicate pipe_through for :browser}, fn ->
       defmodule DupScopedPipeThroughRouter do
         use Phoenix.Router, otp_app: :phoenix
+
         pipeline :browser do
         end
+
         scope "/" do
           pipe_through [:browser]
+
           scope "/nested" do
             pipe_through [:browser]
           end

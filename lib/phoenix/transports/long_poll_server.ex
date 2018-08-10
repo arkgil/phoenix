@@ -47,8 +47,8 @@ defmodule Phoenix.Transports.LongPoll.Server do
         schedule_inactive_shutdown(state.window_ms)
         {:ok, state}
 
-    :error ->
-      :ignore
+      :error ->
+        :ignore
     end
   end
 
@@ -83,6 +83,7 @@ defmodule Phoenix.Transports.LongPoll.Server do
     case state.buffer do
       [] ->
         {:noreply, %{state | client_ref: {client_ref, ref}, last_client_poll: now_ms()}}
+
       buffer ->
         broadcast_from!(state, client_ref, {:messages, Enum.reverse(buffer), ref})
         {:noreply, %{state | client_ref: nil, last_client_poll: now_ms(), buffer: []}}
@@ -124,12 +125,16 @@ defmodule Phoenix.Transports.LongPoll.Server do
 
   defp broadcast_from!(state, client_ref, msg) when is_binary(client_ref),
     do: PubSub.broadcast_from!(state.pubsub_server, self(), client_ref, msg)
+
   defp broadcast_from!(_state, client_ref, msg) when is_pid(client_ref),
     do: send(client_ref, msg)
 
   defp publish_reply(state, reply) when is_map(reply) do
-    IO.warn "Returning a map from the LongPolling serializer is deprecated. " <>
-            "Please return JSON encoded data instead (see Phoenix.Socket.Serializer)"
+    IO.warn(
+      "Returning a map from the LongPolling serializer is deprecated. " <>
+        "Please return JSON encoded data instead (see Phoenix.Socket.Serializer)"
+    )
+
     publish_reply(state, Phoenix.json_library().encode_to_iodata!(reply))
   end
 

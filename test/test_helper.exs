@@ -14,6 +14,7 @@ defmodule Phoenix.ErrorView do
     unless conn.private.phoenix_endpoint do
       raise "no endpoint in error view"
     end
+
     "#{template} from Phoenix.ErrorView"
   end
 end
@@ -21,9 +22,7 @@ end
 # For mix tests
 Mix.shell(Mix.Shell.Process)
 
-assert_timeout = String.to_integer(
-  System.get_env("ELIXIR_ASSERT_TIMEOUT") || "200"
-)
+assert_timeout = String.to_integer(System.get_env("ELIXIR_ASSERT_TIMEOUT") || "200")
 
-exclude = if Version.match?(System.version, "~> 1.5"), do: [], else: [phx_new: true]
+exclude = if Version.match?(System.version(), "~> 1.5"), do: [], else: [phx_new: true]
 ExUnit.start(assert_receive_timeout: assert_timeout, exclude: exclude)

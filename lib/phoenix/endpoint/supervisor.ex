@@ -15,6 +15,7 @@ defmodule Phoenix.Endpoint.Supervisor do
       {:ok, _} = ok ->
         warmup(mod)
         ok
+
       {:error, _} = error ->
         error
     end
@@ -22,12 +23,16 @@ defmodule Phoenix.Endpoint.Supervisor do
 
   @doc false
   def init({otp_app, mod}) do
-    id = :crypto.strong_rand_bytes(16) |> Base.encode64
+    id = :crypto.strong_rand_bytes(16) |> Base.encode64()
 
     conf =
       case mod.init(:supervisor, [endpoint_id: id] ++ config(otp_app, mod)) do
-        {:ok, conf} -> conf
-        other -> raise ArgumentError, "expected init/2 callback to return {:ok, config}, got: #{inspect other}"
+        {:ok, conf} ->
+          conf
+
+        other ->
+          raise ArgumentError,
+                "expected init/2 callback to return {:ok, config}, got: #{inspect(other)}"
       end
 
     server? = server?(conf)
@@ -38,10 +43,9 @@ defmodule Phoenix.Endpoint.Supervisor do
 
     children =
       config_children(mod, conf, otp_app) ++
-      pubsub_children(mod, conf) ++
-      socket_children(mod) ++
-      server_children(mod, conf, otp_app, server?) ++
-      watcher_children(mod, conf, server?)
+        pubsub_children(mod, conf) ++
+        socket_children(mod) ++
+        server_children(mod, conf, otp_app, server?) ++ watcher_children(mod, conf, server?)
 
     # Supervisor.init(children, strategy: :one_for_one)
     {:ok, {{:one_for_one, 3, 5}, children}}
@@ -98,11 +102,17 @@ defmodule Phoenix.Endpoint.Supervisor do
         config[:adapter]
 
       Phoenix.Endpoint.CowboyHandler ->
-        Logger.warn "Phoenix.Endpoint.CowboyHandler is deprecated, please use Phoenix.Endpoint.CowboyAdapter instead"
+        Logger.warn(
+          "Phoenix.Endpoint.CowboyHandler is deprecated, please use Phoenix.Endpoint.CowboyAdapter instead"
+        )
+
         CowboyAdapter
 
       other ->
-        Logger.warn "The :handler option in #{inspect endpoint} is deprecated, please use :adapter instead"
+        Logger.warn(
+          "The :handler option in #{inspect(endpoint)} is deprecated, please use :adapter instead"
+        )
+
         other
     end
   end
@@ -116,8 +126,8 @@ defmodule Phoenix.Endpoint.Supervisor do
 
   defp warn_on_different_adapter_version(CowboyAdapter, Cowboy2Adapter, endpoint) do
     Logger.warn("""
-    You have specified #{inspect CowboyAdapter} for Cowboy v1.x \
-    in the :adapter configuration of your Phoenix endpoint #{inspect endpoint} \
+    You have specified #{inspect(CowboyAdapter)} for Cowboy v1.x \
+    in the :adapter configuration of your Phoenix endpoint #{inspect(endpoint)} \
     but your mix.exs has fetched Cowboy v2.x.
 
     If you wish to use Cowboy 1, please update mix.exs to point to the \
@@ -134,18 +144,24 @@ defmodule Phoenix.Endpoint.Supervisor do
 
     raise "aborting due to adapter mismatch"
   end
+
   defp warn_on_different_adapter_version(_user, _autodetected, _endpoint), do: :ok
 
   defp watcher_children(_mod, conf, server?) do
     if server? do
       Enum.map(conf[:watchers], fn {cmd, args} ->
-        worker(Phoenix.Endpoint.Watcher, watcher_args(cmd, args),
-               id: {cmd, args}, restart: :transient)
+        worker(
+          Phoenix.Endpoint.Watcher,
+          watcher_args(cmd, args),
+          id: {cmd, args},
+          restart: :transient
+        )
       end)
     else
       []
     end
   end
+
   defp watcher_args(cmd, cmd_args) do
     {args, opts} = Enum.split_while(cmd_args, &is_binary(&1))
     [cmd, args, opts]
@@ -166,37 +182,40 @@ defmodule Phoenix.Endpoint.Supervisor do
     |> config(endpoint)
     |> server?()
   end
+
   def server?(conf) when is_list(conf) do
     Keyword.get(conf, :server, Application.get_env(:phoenix, :serve_endpoints, false))
   end
 
   defp defaults(otp_app, module) do
-    [otp_app: otp_app,
+    [
+      otp_app: otp_app,
 
-     # Compile-time config
-     code_reloader: false,
-     debug_errors: false,
-     render_errors: [view: render_errors(module), accepts: ~w(html), layout: false],
+      # Compile-time config
+      code_reloader: false,
+      debug_errors: false,
+      render_errors: [view: render_errors(module), accepts: ~w(html), layout: false],
 
-     # Runtime config
-     cache_static_manifest: nil,
-     check_origin: true,
-     http: false,
-     https: false,
-     reloadable_apps: nil,
-     reloadable_compilers: [:gettext, :phoenix, :elixir],
-     secret_key_base: nil,
-     static_url: nil,
-     url: [host: "localhost", path: "/"],
+      # Runtime config
+      cache_static_manifest: nil,
+      check_origin: true,
+      http: false,
+      https: false,
+      reloadable_apps: nil,
+      reloadable_compilers: [:gettext, :phoenix, :elixir],
+      secret_key_base: nil,
+      static_url: nil,
+      url: [host: "localhost", path: "/"],
 
-     # Supervisor config
-     pubsub: [pool_size: 1],
-     watchers: []]
+      # Supervisor config
+      pubsub: [pool_size: 1],
+      watchers: []
+    ]
   end
 
   defp render_errors(module) do
     module
-    |> Module.split
+    |> Module.split()
     |> Enum.at(0)
     |> Module.concat("ErrorView")
   end
@@ -259,13 +278,14 @@ defmodule Phoenix.Endpoint.Supervisor do
   the Phoenix.Config layer knows how to cache it.
   """
   def struct_url(endpoint) do
-    url    = endpoint.config(:url)
+    url = endpoint.config(:url)
     struct = build_url(endpoint, url)
+
     {:cache,
-      case url[:path] || "/" do
-        "/"  -> struct
-        path -> %{struct | path: path}
-      end}
+     case url[:path] || "/" do
+       "/" -> struct
+       path -> %{struct | path: path}
+     end}
   end
 
   defp build_url(endpoint, url) do
@@ -277,15 +297,17 @@ defmodule Phoenix.Endpoint.Supervisor do
       cond do
         https ->
           {"https", https[:port]}
+
         http ->
           {"http", http[:port]}
+
         true ->
           {"http", 80}
       end
 
     scheme = url[:scheme] || scheme
-    host   = host_to_binary(url[:host] || "localhost")
-    port   = port_to_integer(url[:port] || port)
+    host = host_to_binary(url[:host] || "localhost")
+    port = port_to_integer(url[:port] || port)
 
     %URI{scheme: scheme, port: port, host: host}
   end
@@ -318,7 +340,7 @@ defmodule Phoenix.Endpoint.Supervisor do
 
   def static_path(_endpoint, "/" <> _ = path) do
     if String.contains?(path, @invalid_local_url_chars) do
-      raise ArgumentError, "unsafe characters detected for path #{inspect path}"
+      raise ArgumentError, "unsafe characters detected for path #{inspect(path)}"
     else
       {:nocache, path}
     end
@@ -329,7 +351,7 @@ defmodule Phoenix.Endpoint.Supervisor do
   end
 
   defp raise_invalid_path(path) do
-    raise ArgumentError, "expected a path starting with a single / but got #{inspect path}"
+    raise ArgumentError, "expected a path starting with a single / but got #{inspect(path)}"
   end
 
   # TODO: Deprecate {:system, env_var} once we require Elixir v1.7+
@@ -367,6 +389,7 @@ defmodule Phoenix.Endpoint.Supervisor do
         {:cache, "/" <> value <> "?vsn=d"}
       end)
     end
+
     endpoint.static_path("/")
   end
 
@@ -382,9 +405,11 @@ defmodule Phoenix.Endpoint.Supervisor do
 
         manifest["latest"]
       else
-        Logger.error "Could not find static manifest at #{inspect outer}. " <>
-                     "Run \"mix phx.digest\" after building your static files " <>
-                     "or remove the configuration from \"config/prod.exs\"."
+        Logger.error(
+          "Could not find static manifest at #{inspect(outer)}. " <>
+            "Run \"mix phx.digest\" after building your static files " <>
+            "or remove the configuration from \"config/prod.exs\"."
+        )
       end
     else
       %{}

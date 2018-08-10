@@ -186,6 +186,7 @@ defmodule Phoenix.Router.ScopedRoutingTest do
       defmodule SomeRouter do
         use Phoenix.Router, otp_app: :phoenix
         get "/foo", Router, []
+
         scope "/another" do
           resources '/bar', Router, []
         end

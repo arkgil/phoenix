@@ -265,36 +265,40 @@ defmodule Phoenix.Channel do
   alias Phoenix.Channel.Server
 
   @type reply :: status :: atom | {status :: atom, response :: map}
-  @type socket_ref :: {transport_pid :: Pid, serializer :: module,
-                       topic :: binary, ref :: binary, join_ref :: binary}
+  @type socket_ref ::
+          {transport_pid :: Pid, serializer :: module, topic :: binary, ref :: binary,
+           join_ref :: binary}
 
-  @callback join(topic :: binary, auth_msg :: map, Socket.t) ::
-              {:ok, Socket.t} |
-              {:ok, map, Socket.t} |
-              {:error, map}
+  @callback join(topic :: binary, auth_msg :: map, Socket.t()) ::
+              {:ok, Socket.t()}
+              | {:ok, map, Socket.t()}
+              | {:error, map}
 
-  @callback handle_in(event :: String.t, msg :: map, Socket.t) ::
-              {:noreply, Socket.t} |
-              {:noreply, Socket.t, timeout | :hibernate} |
-              {:reply, reply, Socket.t} |
-              {:stop, reason :: term, Socket.t} |
-              {:stop, reason :: term, reply, Socket.t}
+  @callback handle_in(event :: String.t(), msg :: map, Socket.t()) ::
+              {:noreply, Socket.t()}
+              | {:noreply, Socket.t(), timeout | :hibernate}
+              | {:reply, reply, Socket.t()}
+              | {:stop, reason :: term, Socket.t()}
+              | {:stop, reason :: term, reply, Socket.t()}
 
-  @callback handle_out(event :: String.t, msg :: map, Socket.t) ::
-              {:noreply, Socket.t} |
-              {:noreply, Socket.t, timeout | :hibernate} |
-              {:stop, reason :: term, Socket.t}
+  @callback handle_out(event :: String.t(), msg :: map, Socket.t()) ::
+              {:noreply, Socket.t()}
+              | {:noreply, Socket.t(), timeout | :hibernate}
+              | {:stop, reason :: term, Socket.t()}
 
-  @callback handle_info(term, Socket.t) ::
-              {:noreply, Socket.t} |
-              {:stop, reason :: term, Socket.t}
+  @callback handle_info(term, Socket.t()) ::
+              {:noreply, Socket.t()}
+              | {:stop, reason :: term, Socket.t()}
 
-  @callback code_change(old_vsn, Socket.t, extra :: term) ::
-              {:ok, Socket.t} |
-              {:error, reason :: term} when old_vsn: term | {:down, term}
+  @callback code_change(old_vsn, Socket.t(), extra :: term) ::
+              {:ok, Socket.t()}
+              | {:error, reason :: term}
+            when old_vsn: term | {:down, term}
 
-  @callback terminate(reason :: :normal | :shutdown | {:shutdown, :left | :closed | term}, Socket.t) ::
-              term
+  @callback terminate(
+              reason :: :normal | :shutdown | {:shutdown, :left | :closed | term},
+              Socket.t()
+            ) :: term
 
   @optional_callbacks handle_in: 3, handle_out: 3, handle_info: 2, code_change: 3, terminate: 2
 
@@ -361,11 +365,12 @@ defmodule Phoenix.Channel do
   @doc false
   def __on_definition__(env, :def, :handle_out, [event, _payload, _socket], _, _)
       when is_binary(event) do
-
     unless event in Module.get_attribute(env.module, :phoenix_intercepts) do
-      IO.write "#{Path.relative_to(env.file, File.cwd!)}:#{env.line}: [warning] " <>
-               "An intercept for event \"#{event}\" has not yet been defined in #{env.module}.handle_out/3. " <>
-               "Add \"#{event}\" to your list of intercepted events with intercept/1"
+      IO.write(
+        "#{Path.relative_to(env.file, File.cwd!())}:#{env.line}: [warning] " <>
+          "An intercept for event \"#{event}\" has not yet been defined in #{env.module}.handle_out/3. " <>
+          "Add \"#{event}\" to your list of intercepted events with intercept/1"
+      )
     end
   end
 
@@ -386,7 +391,7 @@ defmodule Phoenix.Channel do
   """
   def broadcast(socket, event, message) do
     %{pubsub_server: pubsub_server, topic: topic} = assert_joined!(socket)
-    Server.broadcast pubsub_server, topic, event, message
+    Server.broadcast(pubsub_server, topic, event, message)
   end
 
   @doc """
@@ -394,7 +399,7 @@ defmodule Phoenix.Channel do
   """
   def broadcast!(socket, event, message) do
     %{pubsub_server: pubsub_server, topic: topic} = assert_joined!(socket)
-    Server.broadcast! pubsub_server, topic, event, message
+    Server.broadcast!(pubsub_server, topic, event, message)
   end
 
   @doc """
@@ -410,16 +415,20 @@ defmodule Phoenix.Channel do
 
   """
   def broadcast_from(socket, event, message) do
-    %{pubsub_server: pubsub_server, topic: topic, channel_pid: channel_pid} = assert_joined!(socket)
-    Server.broadcast_from pubsub_server, channel_pid, topic, event, message
+    %{pubsub_server: pubsub_server, topic: topic, channel_pid: channel_pid} =
+      assert_joined!(socket)
+
+    Server.broadcast_from(pubsub_server, channel_pid, topic, event, message)
   end
 
   @doc """
   Same as `broadcast_from/3`, but raises if broadcast fails.
   """
   def broadcast_from!(socket, event, message) do
-    %{pubsub_server: pubsub_server, topic: topic, channel_pid: channel_pid} = assert_joined!(socket)
-    Server.broadcast_from! pubsub_server, channel_pid, topic, event, message
+    %{pubsub_server: pubsub_server, topic: topic, channel_pid: channel_pid} =
+      assert_joined!(socket)
+
+    Server.broadcast_from!(pubsub_server, channel_pid, topic, event, message)
   end
 
   @doc """
@@ -470,6 +479,7 @@ defmodule Phoenix.Channel do
   def reply(socket_ref, status) when is_atom(status) do
     reply(socket_ref, {status, %{}})
   end
+
   def reply({transport_pid, serializer, topic, ref, join_ref}, {status, payload}) do
     Server.reply(transport_pid, join_ref, ref, topic, {status, payload}, serializer)
   end
@@ -479,10 +489,11 @@ defmodule Phoenix.Channel do
 
   See `reply/2` for example usage.
   """
-  @spec socket_ref(Socket.t) :: socket_ref
+  @spec socket_ref(Socket.t()) :: socket_ref
   def socket_ref(%Socket{joined: true, ref: ref} = socket) when not is_nil(ref) do
     {socket.transport_pid, socket.serializer, socket.topic, ref, socket.join_ref}
   end
+
   def socket_ref(_socket) do
     raise ArgumentError, """
     Socket refs can only be generated for a socket that has joined with a push ref

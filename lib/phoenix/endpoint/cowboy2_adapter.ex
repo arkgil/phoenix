@@ -42,7 +42,7 @@ defmodule Phoenix.Endpoint.Cowboy2Adapter do
     dispatches = [{:_, Phoenix.Endpoint.Cowboy2Handler, {endpoint, endpoint.init([])}}]
     config = Keyword.put_new(config, :dispatch, [{:_, dispatches}])
     spec = Plug.Adapters.Cowboy2.child_spec(scheme: scheme, plug: {endpoint, []}, options: config)
-    update_in spec.start, &{__MODULE__, :start_link, [scheme, endpoint, &1]}
+    update_in(spec.start, &{__MODULE__, :start_link, [scheme, endpoint, &1]})
   end
 
   @doc false
@@ -55,7 +55,7 @@ defmodule Phoenix.Endpoint.Cowboy2Adapter do
         {:ok, pid}
 
       {:error, {:shutdown, {_, _, {{_, {:error, :eaddrinuse}}, _}}}} = error ->
-        Logger.error [info(scheme, endpoint, ref), " failed, port already in use"]
+        Logger.error([info(scheme, endpoint, ref), " failed, port already in use"])
         error
 
       {:error, _} = error ->
@@ -66,7 +66,7 @@ defmodule Phoenix.Endpoint.Cowboy2Adapter do
   @doc false
   def info(scheme, endpoint, ref) do
     server = "cowboy #{Application.spec(:cowboy)[:vsn]}"
-    "Running #{inspect endpoint} with #{server} at #{uri(scheme, ref)}"
+    "Running #{inspect(endpoint)} with #{server} at #{uri(scheme, ref)}"
   end
 
   defp uri(scheme, ref) do

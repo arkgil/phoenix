@@ -23,8 +23,19 @@ defmodule Phoenix.Router.Route do
 
   """
 
-  defstruct [:verb, :line, :kind, :path, :host, :plug, :opts,
-             :helper, :private, :pipe_through, :assigns]
+  defstruct [
+    :verb,
+    :line,
+    :kind,
+    :path,
+    :host,
+    :plug,
+    :opts,
+    :helper,
+    :private,
+    :pipe_through,
+    :assigns
+  ]
 
   @type t :: %Route{}
 
@@ -44,16 +55,36 @@ defmodule Phoenix.Router.Route do
   Receives the verb, path, plug, options and helper
   and returns a `Phoenix.Router.Route` struct.
   """
-  @spec build(non_neg_integer, :match | :forward, String.t, String.t, String.t | nil, atom, atom, atom | nil, atom, %{}, %{}) :: t
+  @spec build(
+          non_neg_integer,
+          :match | :forward,
+          String.t(),
+          String.t(),
+          String.t() | nil,
+          atom,
+          atom,
+          atom | nil,
+          atom,
+          %{},
+          %{}
+        ) :: t
   def build(line, kind, verb, path, host, plug, opts, helper, pipe_through, private, assigns)
-      when is_atom(verb) and (is_binary(host) or is_nil(host)) and
-           is_atom(plug) and (is_binary(helper) or is_nil(helper)) and
-           is_list(pipe_through) and is_map(private) and is_map(assigns)
-           and kind in [:match, :forward] do
-
-    %Route{kind: kind, verb: verb, path: path, host: host, private: private,
-           plug: plug, opts: opts, helper: helper,
-           pipe_through: pipe_through, assigns: assigns, line: line}
+      when is_atom(verb) and (is_binary(host) or is_nil(host)) and is_atom(plug) and
+             (is_binary(helper) or is_nil(helper)) and is_list(pipe_through) and is_map(private) and
+             is_map(assigns) and kind in [:match, :forward] do
+    %Route{
+      kind: kind,
+      verb: verb,
+      path: path,
+      host: host,
+      private: private,
+      plug: plug,
+      opts: opts,
+      helper: helper,
+      pipe_through: pipe_through,
+      assigns: assigns,
+      line: line
+    }
   end
 
   @doc """
@@ -76,23 +107,25 @@ defmodule Phoenix.Router.Route do
   defp verb_match(verb), do: verb |> to_string() |> String.upcase()
 
   defp build_path_and_binding(%Route{path: path} = route) do
-    {params, segments} = case route.kind do
-      :forward -> build_path_match(path <> "/*_forward_path_info")
-      :match   -> build_path_match(path)
-    end
+    {params, segments} =
+      case route.kind do
+        :forward -> build_path_match(path <> "/*_forward_path_info")
+        :match -> build_path_match(path)
+      end
 
-    binding = for var <- params, var != :_forward_path_info do
-      {Atom.to_string(var), Macro.var(var, nil)}
-    end
+    binding =
+      for var <- params, var != :_forward_path_info do
+        {Atom.to_string(var), Macro.var(var, nil)}
+      end
 
     {segments, binding}
   end
 
   defp build_host(host) do
     cond do
-      is_nil(host)             -> quote do: _
+      is_nil(host) -> quote do: _
       String.last(host) == "." -> quote do: unquote(host) <> _
-      true                     -> host
+      true -> host
     end
   end
 
@@ -132,6 +165,7 @@ defmodule Phoenix.Router.Route do
   end
 
   defp build_prepare_expr(_key, data) when data == %{}, do: {[], []}
+
   defp build_prepare_expr(key, data) do
     var = Macro.var(key, :conn)
     merge = quote(do: Map.merge(unquote(var), unquote(Macro.escape(data))))
@@ -139,10 +173,12 @@ defmodule Phoenix.Router.Route do
   end
 
   defp build_params([]), do: {[], [], []}
+
   defp build_params(binding) do
     params = Macro.var(:params, :conn)
     path_params = Macro.var(:path_params, :conn)
     merge_params = quote(do: Map.merge(unquote(params), unquote(path_params)))
+
     {
       [quote(do: unquote(path_params) = %{unquote_splicing(binding)})],
       [{:params, params}],
@@ -160,11 +196,15 @@ defmodule Phoenix.Router.Route do
     case build_path_match(path) do
       {[], path_segments} ->
         if phoenix_forwards[plug] do
-          raise ArgumentError, "`#{inspect plug}` has already been forwarded to. A module can only be forwarded a single time."
+          raise ArgumentError,
+                "`#{inspect(plug)}` has already been forwarded to. A module can only be forwarded a single time."
         end
+
         path_segments
+
       _ ->
-        raise ArgumentError, "Dynamic segment `\"#{path}\"` not allowed when forwarding. Use a static path instead."
+        raise ArgumentError,
+              "Dynamic segment `\"#{path}\"` not allowed when forwarding. Use a static path instead."
     end
   end
 

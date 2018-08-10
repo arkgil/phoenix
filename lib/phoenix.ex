@@ -78,14 +78,16 @@ defmodule Phoenix do
 
   defp warn_on_missing_json_library do
     module = json_library()
-    Code.ensure_loaded?(module) || IO.write :stderr, """
-    failed to load #{inspect(module)} for Phoenix JSON encoding.
-    (module #{inspect(module)} is not available)
 
-    Ensure #{inspect(module)} is loaded from your deps in mix.exs, or
-    configure an existing encoder in your mix config using:
+    Code.ensure_loaded?(module) ||
+      IO.write(:stderr, """
+      failed to load #{inspect(module)} for Phoenix JSON encoding.
+      (module #{inspect(module)} is not available)
 
-        config :phoenix, :json_library, MyJSONLibrary
-    """
+      Ensure #{inspect(module)} is loaded from your deps in mix.exs, or
+      configure an existing encoder in your mix config using:
+
+          config :phoenix, :json_library, MyJSONLibrary
+      """)
   end
 end
