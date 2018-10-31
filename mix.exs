@@ -60,7 +60,7 @@ defmodule Phoenix.MixProject do
       {:gettext, "~> 0.15.0", only: :test},
       {:phoenix_html, "~> 2.11", only: :test},
       {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", only: :test},
-      {:telemetry, github: "elixir-telemetry/telemetry"}
+      {:telemetry, "~> 0.2"}
     ]
   end
 
