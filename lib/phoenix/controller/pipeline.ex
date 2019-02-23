@@ -27,12 +27,25 @@ defmodule Phoenix.Controller.Pipeline do
               |> Map.put(:phoenix_action, action))
           )
 
-        metadata = %{conn: conn}
+        controller = Phoenix.Controller.controller_module(conn)
+        action = Phoenix.Controller.action_name(conn)
         start = :erlang.monotonic_time()
-        :telemetry.execute([:phoenix, :controller, :call, :start], 0, metadata)
+
+        :telemetry.execute([:phoenix, :controller, :call, :start], %{}, %{
+          conn: conn,
+          controller: controller,
+          action: action
+        })
+
         conn = phoenix_controller_pipeline(conn, action)
         diff = :erlang.monotonic_time() - start
-        :telemetry.execute([:phoenix, :controller, :call, :stop], diff, metadata)
+
+        :telemetry.execute([:phoenix, :controller, :call, :stop], %{total: diff}, %{
+          conn: conn,
+          controller: controller,
+          action: action
+        })
+
         conn
       end
 

@@ -764,10 +764,10 @@ defmodule Phoenix.Controller do
     metadata = %{view: view, template: template, format: format, conn: conn}
 
     start = :erlang.monotonic_time()
-    :telemetry.execute([:phoenix, :controller, :render, :start], 0, metadata)
+    :telemetry.execute([:phoenix, :controller, :render, :start], %{}, metadata)
     conn = __put_render__(conn, view, template, format, assigns)
     diff = :erlang.monotonic_time() - start
-    :telemetry.execute([:phoenix, :controller, :render, :stop], diff, metadata)
+    :telemetry.execute([:phoenix, :controller, :render, :stop], %{total: diff}, metadata)
 
     send_resp(conn)
   end
